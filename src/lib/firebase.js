@@ -8,7 +8,12 @@ import { getStorage } from "firebase/storage";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
-  // CONFIDENTIAL
+  apiKey: "AIzaSyAPRG2u1q07eB4zcJeAAVrjK5yXS1USjq8",
+  authDomain: "realestatesite-cb280.firebaseapp.com",
+  projectId: "realestatesite-cb280",
+  storageBucket: "realestatesite-cb280.firebasestorage.app",
+  messagingSenderId: "37414044491",
+  appId: "1:37414044491:web:cea064404186a57c1c9ece"
 };
 
 // Initialize Firebase
