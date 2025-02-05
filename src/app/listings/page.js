@@ -14,15 +14,30 @@ export default function Listings() {
     const fetchListings = async () => {
       try {
         const querySnapshot = await getDocs(collection(db, "listings"));
-        const listingsData = querySnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
+        const listingsData = await Promise.all(
+          querySnapshot.docs.map(async (docSnapshot) => {
+            const listing = { id: docSnapshot.id, ...docSnapshot.data() };
+    
+            // Fetch Ratings Collection
+            const ratingsSnapshot = await getDocs(collection(db, "listings", listing.id, "ratings"));
+            if (!ratingsSnapshot.empty) {
+              const totalRating = ratingsSnapshot.docs.reduce((sum, doc) => sum + doc.data().rating, 0);
+              listing.averageRating = (totalRating / ratingsSnapshot.docs.length).toFixed(1);
+              listing.ratingCount = ratingsSnapshot.docs.length;
+            } else {
+              listing.averageRating = "N/A";
+              listing.ratingCount = 0;
+            }
+    
+            return listing;
+          })
+        );
+    
         setListings(listingsData);
       } catch (error) {
         console.error("Error fetching listings:", error);
       }
-    };
+    };    
 
     fetchListings();
   }, []);
@@ -62,11 +77,21 @@ export default function Listings() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {listings.map((listing) => (
           <div key={listing.id} className="border p-4 rounded-lg shadow relative">
-            <h2 className="text-xl font-bold">{listing.title}</h2>
+            
+            {/* Flex container to align title and rating side by side */}
+            <div className="flex justify-between items-center">
+              <h2 className="text-xl font-bold">{listing.title}</h2>
+  
+              {/* Display Average Star Rating to the right */}
+              <p className="text-yellow-500 flex items-center text-sm relative top-3">
+                ⭐ {listing.averageRating} / 5.0 ({listing.ratingCount})
+              </p>
+            </div>
+  
             <p>{listing.description}</p>
             <p className="text-gray-500">Location: {listing.location}</p>
             <p className="font-bold">${listing.price}/month</p>
-
+  
             {/* Track Listing Button (Heart Icon) */}
             <button
               onClick={() => handleTrackListing(listing.id)}
@@ -74,13 +99,13 @@ export default function Listings() {
             >
               {trackedListings.has(listing.id) ? <AiFillHeart /> : <AiOutlineHeart />}
             </button>
-
+  
             <Link href={`/view-listing/${listing.id}`} className="block bg-blue-600 text-white text-center p-2 mt-2">
               View Listing
             </Link>
-          </div>
+          </div>        
         ))}
       </div>
     </div>
-  );
+  );  
 }
