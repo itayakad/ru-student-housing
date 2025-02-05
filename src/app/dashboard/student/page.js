@@ -1,11 +1,14 @@
 "use client";
 import { useState, useEffect } from "react";
 import { auth, db } from "@/lib/firebase";
-import { collection, getDocs, doc, getDoc, deleteDoc } from "firebase/firestore";
+import { collection, getDocs, doc, setDoc, deleteDoc, getDoc } from "firebase/firestore";
+import { AiOutlineHeart, AiFillHeart } from "react-icons/ai";
+import Link from "next/link";
 
 export default function StudentDashboard() {
   const [user, setUser] = useState(null);
-  const [savedListings, setSavedListings] = useState([]);
+  const [savedListings, setSavedListings] = useState(new Set());
+  const [listings, setListings] = useState([]);
 
   useEffect(() => {
     const currentUser = auth.currentUser;
@@ -17,21 +20,24 @@ export default function StudentDashboard() {
       try {
         const savedRef = collection(db, "users", currentUser.uid, "savedListings");
         const savedSnap = await getDocs(savedRef);
-        const savedData = [];
+        const savedListingIds = new Set(savedSnap.docs.map((doc) => doc.id));
 
+        setSavedListings(savedListingIds);
+
+        const listingData = [];
         for (const savedDoc of savedSnap.docs) {
           const listingRef = doc(db, "listings", savedDoc.id);
           const listingSnap = await getDoc(listingRef);
 
           if (listingSnap.exists()) {
-            savedData.push({
+            listingData.push({
               id: listingSnap.id,
               ...listingSnap.data(),
             });
           }
         }
 
-        setSavedListings(savedData);
+        setListings(listingData);
       } catch (error) {
         console.error("Error fetching saved listings:", error);
       }
@@ -40,11 +46,22 @@ export default function StudentDashboard() {
     fetchSavedListings();
   }, []);
 
-  const handleUnsaveListing = async (listingId) => {
-    if (!user) return;
+  const handleTrackListing = async (listingId) => {
+    if (!user) {
+      alert("You must be logged in to track listings.");
+      return;
+    }
 
-    await deleteDoc(doc(db, "users", user.uid, "savedListings", listingId));
-    setSavedListings((prev) => prev.filter((listing) => listing.id !== listingId));
+    const listingRef = doc(db, "users", user.uid, "savedListings", listingId);
+
+    if (savedListings.has(listingId)) {
+      await deleteDoc(listingRef);
+      setSavedListings((prev) => new Set([...prev].filter((id) => id !== listingId)));
+      setListings((prev) => prev.filter((listing) => listing.id !== listingId));
+    } else {
+      await setDoc(listingRef, { savedAt: new Date() });
+      setSavedListings((prev) => new Set(prev.add(listingId)));
+    }
   };
 
   return (
@@ -53,18 +70,28 @@ export default function StudentDashboard() {
       <p>Welcome, {user?.email}!</p>
 
       <h2 className="text-xl font-bold mt-6">Tracked Listings</h2>
-      {savedListings.length === 0 ? (
+      {listings.length === 0 ? (
         <p>No tracked listings yet.</p>
       ) : (
-        savedListings.map((listing) => (
+        listings.map((listing) => (
           <div key={listing.id} className="border p-4 rounded-lg shadow mt-4">
-            <h2 className="text-lg font-bold">{listing.title}</h2>
+            {/* Title and Heart in a Row */}
+            <div className="flex justify-between items-center">
+              <h2 className="text-lg font-bold">{listing.title}</h2>
+              <button onClick={() => handleTrackListing(listing.id)} className="text-red-600 text-2xl">
+                {savedListings.has(listing.id) ? <AiFillHeart /> : <AiOutlineHeart />}
+              </button>
+            </div>
+
+            {/* Listing Details */}
             <p>{listing.description}</p>
             <p className="text-gray-500">Location: {listing.location}</p>
             <p className="font-bold">${listing.price}/month</p>
-            <button onClick={() => handleUnsaveListing(listing.id)} className="bg-red-600 text-white p-2 mt-2">
-              Remove
-            </button>
+
+            {/* View Listing Button */}
+            <Link href={`/view-listing/${listing.id}`} className="block bg-blue-600 text-white text-center p-2 mt-2 rounded-md hover:bg-blue-700 transition">
+              View Listing
+            </Link>
           </div>
         ))
       )}

@@ -2,13 +2,23 @@ import Link from "next/link";
 
 export default function Navbar() {
   return (
-    <nav className="bg-blue-600 p-4 text-white flex justify-between items-center">
-      <h1 className="text-lg font-bold">🏡 Real Estate Platform</h1>
-      <div className="space-x-4">
-        <Link href="/" className="hover:underline">Home</Link>
-        <Link href="/listings" className="hover:underline">Listings</Link>
-        <Link href="/dashboard" className="hover:underline">Dashboard</Link>
-        <Link href="/profile" className="hover:underline">Profile</Link>
+    <nav className="bg-blue-600 text-white px-8 py-4 flex justify-between items-center shadow-md">
+      {/* Clickable Logo / Title */}
+      <Link href="/" className="text-2xl font-bold flex items-center gap-2 hover:opacity-80 transition">
+        🏡 <span className="hidden sm:inline">Rutgers Housing</span>
+      </Link>
+
+      {/* Navigation Links */}
+      <div className="flex space-x-6 text-lg">
+        <Link href="/listings" className="hover:text-gray-300 transition">
+          Listings
+        </Link>
+        <Link href="/dashboard" className="hover:text-gray-300 transition">
+          Dashboard
+        </Link>
+        <Link href="/profile" className="hover:text-gray-300 transition">
+          Profile
+        </Link>
       </div>
     </nav>
   );
